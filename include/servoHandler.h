@@ -26,7 +26,7 @@ public:
 
     // Initialize the serial communication and mutex with a specific servo configuration.
     // Defaults to the ST3215 configuration if none is provided.
-    bool begin(HardwareSerial& serial, int dirPin, const ServoModelConfig& config = ST3215_CONFIG);
+    bool begin(HardwareSerial& serial, const ServoModelConfig& config = ST3215_CONFIG);
 
     // --- High-Level Motion Control ---
     bool setAngle(byte servoId, float angle_deg);

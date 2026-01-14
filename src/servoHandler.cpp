@@ -13,12 +13,12 @@ ServoHandler::ServoHandler(STSServoDriver& driver_for_testing) : internal_driver
 }
 
 // --- Initialization ---
-bool ServoHandler::begin(HardwareSerial& serial, int dirPin, const ServoModelConfig& config) {
+bool ServoHandler::begin(HardwareSerial& serial, const ServoModelConfig& config) {
     // Store the provided configuration
     this->config = config;
 
     // Initialize the actual driver that the sts reference is bound to
-    if (!sts.init(dirPin, &serial)) {
+    if (!sts.init(&serial)) {
         return false;
     }
 

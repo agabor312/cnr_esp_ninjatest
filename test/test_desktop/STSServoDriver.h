@@ -17,7 +17,7 @@ struct VirtualServo {
     byte mode = STSMode::POSITION;
     bool torque_enabled = true;
     int16_t torque_limit = 1000;
-    
+
     int current_position = 0;
     int current_speed = 0;
     int current_temperature = 0;
@@ -44,34 +44,34 @@ public:
 
     // --- Mocked implementations of all library functions ---
     virtual ~STSServoDriver() {}
-    
+
     // We make these virtual so our simple test mock can inherit and override them if needed,
     // but we also provide a default implementation.
-    virtual bool init(byte const &dirPin, HardwareSerial *serialPort = nullptr, long const &baudRate = 1000000) { return true; }
+    virtual bool init(HardwareSerial *serialPort = nullptr, long const &baudRate = 1000000) { return true; }
     virtual bool ping(byte const &servoId) { return true; }
-    
-    virtual bool setMode(unsigned char const& servoId, STSMode const& mode) { 
-        getServo(servoId).mode = mode; 
-        return true; 
+
+    virtual bool setMode(unsigned char const& servoId, STSMode const& mode) {
+        getServo(servoId).mode = mode;
+        return true;
     }
-    
+
     virtual bool writeRegister(byte const &servoId, byte const &registerId, byte const &value, bool const &asynchronous = false);
-    
+
     virtual bool writeTwoBytesRegister(byte const &servoId, byte const &registerId, int16_t const &value, bool const &asynchronous = false);
 
     virtual int16_t readTwoBytesRegister(byte const &servoId, byte const &registerId);
 
     virtual int getCurrentPosition(byte const &servoId) { return getServo(servoId).current_position; }
-    
+
     virtual bool setTargetPosition(byte const &servoId, int const &position, int const &speed = 4095, bool const &asynchronous = false) {
         VirtualServo& servo = getServo(servoId);
         servo.target_position = position;
         servo.target_velocity = speed;
         return true;
     }
-    
+
     virtual int getCurrentSpeed(byte const &servoId) { return getServo(servoId).current_speed; }
-    
+
     virtual bool setTargetVelocity(byte const &servoId, int const &velocity, bool const &asynchronous = false) {
         getServo(servoId).target_velocity = velocity;
         return true;

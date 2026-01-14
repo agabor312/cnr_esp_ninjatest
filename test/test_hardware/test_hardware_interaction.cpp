@@ -6,9 +6,10 @@
 
 // --- Hardware Configuration ---
 // IMPORTANT: You must change these values to match your physical setup.
-#define DIR_PIN 2
-#define SERVO_ID 1
+#define SERVO_ID 5
 #define SERIAL_BAUD 1000000
+#define RX_PIN 16
+#define TX_PIN 17
 
 ServoHandler handler;
 ServoFeedback feedback; // Re-use this struct in tests
@@ -16,8 +17,8 @@ ServoFeedback feedback; // Re-use this struct in tests
 void setUp(void) {
     // This is run before each test
     // NOTE: Serial2 is often on pins 16 (RX) and 17 (TX) for standard ESP32 boards.
-    Serial2.begin(SERIAL_BAUD);
-    handler.begin(Serial2, DIR_PIN);
+    Serial2.begin(SERIAL_BAUD,RX_PIN,TX_PIN);
+    handler.begin(Serial2);
     vTaskDelay(pdMS_TO_TICKS(500)); // Give the bus a moment to settle
 }
 
@@ -50,7 +51,7 @@ void test_torque_control_visual_check(void) {
 
     handler.setTorque(SERVO_ID, false);
     TEST_MESSAGE("Torque is OFF. Try moving the servo by hand. It should move easily.");
-    vTaskDelay(pdMS_TO_TICKS(5000)); 
+    vTaskDelay(pdMS_TO_TICKS(5000));
 
     handler.setTorque(SERVO_ID, true);
     TEST_MESSAGE("Torque is ON. Try moving the servo by hand. It should resist.");
@@ -61,7 +62,7 @@ void test_velocity_command_and_feedback(void) {
     int commanded_rpm = 60;
     bool vel_success = handler.setVelocity(SERVO_ID, commanded_rpm);
     TEST_ASSERT_TRUE_MESSAGE(vel_success, "Failed to send setVelocity command.");
-    
+
     vTaskDelay(pdMS_TO_TICKS(500)); // Wait a moment for the servo to get up to speed
 
     bool feedback_success = handler.getFeedback(SERVO_ID, feedback);
@@ -81,16 +82,17 @@ void test_get_feedback_returns_plausible_values(void) {
     TEST_ASSERT_TRUE_MESSAGE(feedback_success, "Failed to retrieve feedback packet.");
 
     TEST_ASSERT_FLOAT_WITHIN(360.0, 180.0, feedback.position_deg);
-    TEST_ASSERT_INT_WITHIN(500, 0, feedback.speed_rpm); 
+    TEST_ASSERT_INT_WITHIN(500, 0, feedback.speed_rpm);
     TEST_ASSERT_INT_WITHIN(100, 0, feedback.temperature_c);
     TEST_ASSERT_FLOAT_WITHIN(15.0, 5.0, feedback.voltage);
-    TEST_ASSERT_FLOAT_WITHIN(2000.0, 0.0, feedback.current_ma); 
+    TEST_ASSERT_FLOAT_WITHIN(2000.0, 0.0, feedback.current_ma);
 }
 
 
 void setup() {
-    vTaskDelay(pdMS_TO_TICKS(2000)); 
-    
+    Serial.begin(115200);
+    vTaskDelay(pdMS_TO_TICKS(2000));
+
     UNITY_BEGIN();
     RUN_TEST(test_servo_responds_to_ping);
     RUN_TEST(test_set_and_get_angle_feedback);
