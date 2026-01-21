@@ -12,23 +12,9 @@
 #define MAX_SERVO_ID 20
 
 ServoHandler handler;
+ServoFeedback feedback;
 
-void setup() {
-    // Start the serial monitor for printing results
-    Serial.begin(MONITOR_BAUD);
-    while (!Serial) {
-        ; // wait for serial port to connect.
-    }
-    Serial.println("\n--- Servo Scanner Initialized ---");
-
-    // Start the hardware serial port for the servo bus
-    Serial2.begin(SERVO_BUS_BAUD, RX_PIN, TX_PIN);
-    handler.begin(Serial2);
-
-    Serial.println("Starting first scan...");
-}
-
-void loop() {
+void ping(){
     Serial.println("Scanning for servos...");
     bool servoFound = false;
 
@@ -49,4 +35,58 @@ void loop() {
     Serial.print(SCAN_DELAY_MS / 1000);
     Serial.println(" seconds before next scan.\n");
     vTaskDelay(pdMS_TO_TICKS(SCAN_DELAY_MS));
+}
+
+void odometer(){
+    Serial.println("---------------------------");
+
+    for (int i = 1; i<=6; i++) {
+        Serial.println(handler.getFeedback(i,feedback)? "Position "+ String(i)+ " : "+String(feedback.position_deg) : "could not get feedback");
+    }
+    Serial.println("---------------------------");
+    vTaskDelay(pdMS_TO_TICKS(1000));
+}
+
+void odometer2(){
+    Serial.println("*********************************");
+
+    for (int i = 5; i<=6; i++) {
+        Serial.println("---------------------------");
+        Serial.println(handler.getFeedback(i,feedback)? "Position "+ String(i)+ " : "+String(feedback.position_deg) +"°" : "could not get Position");
+        Serial.println(handler.getFeedback(i,feedback)? "Speed "+ String(i)+ " : "+String(feedback.speed_rpm) + " RPM" : "could not get Speed");
+        Serial.println(handler.getFeedback(i,feedback)? "Temperature "+ String(i)+ " : "+String(feedback.temperature_c) +" C" : "could not get Temperature");
+        Serial.println(handler.getFeedback(i,feedback)? "Voltage "+ String(i)+ " : "+String(feedback.voltage) + " V" : "could not get Voltage");
+        Serial.println(handler.getFeedback(i,feedback)? "Current "+ String(i)+ " : "+String(feedback.current_ma) + " mA" : "could not get Current");
+        Serial.println(handler.getFeedback(i,feedback)? "Moving? "+ String(i)+ " : "+String(feedback.is_moving): "could not get Moving?");
+        Serial.println("---------------------------");
+
+    }
+    Serial.println("*********************************");
+    vTaskDelay(pdMS_TO_TICKS(1000));
+}
+
+void setup() {
+    // Start the serial monitor for printing results
+    Serial.begin(MONITOR_BAUD);
+    while (!Serial) {
+        ; // wait for serial port to connect.
+    }
+    Serial.println("\n--- Servo Tests Initialized ---");
+
+    // Start the hardware serial port for the servo bus
+    Serial2.begin(SERVO_BUS_BAUD,SERIAL_8N1,RX_PIN, TX_PIN);
+    handler.begin(Serial2);
+
+    for (int i = 1; i<=6; i++) {
+        handler.setTorque(i, false);
+    }
+
+
+    Serial.println("Starting ...");
+}
+
+void loop() {
+    //ping();
+    //odometer();
+    odometer2();
 }

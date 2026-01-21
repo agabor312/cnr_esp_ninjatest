@@ -17,7 +17,7 @@ ServoFeedback feedback; // Re-use this struct in tests
 void setUp(void) {
     // This is run before each test
     // NOTE: Serial2 is often on pins 16 (RX) and 17 (TX) for standard ESP32 boards.
-    Serial2.begin(SERIAL_BAUD,RX_PIN,TX_PIN);
+    Serial2.begin(SERIAL_BAUD,SERIAL_8N1,RX_PIN,TX_PIN);
     handler.begin(Serial2);
     vTaskDelay(pdMS_TO_TICKS(500)); // Give the bus a moment to settle
 }
