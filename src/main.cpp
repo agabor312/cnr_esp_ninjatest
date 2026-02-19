@@ -1,92 +1,62 @@
 #include <Arduino.h>
-#include "servoHandler.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include "config.h"
+#include "robot.h"
 
-// --- Hardware Configuration ---
-#define SERVO_BUS_BAUD 1000000
-#define MONITOR_BAUD 115200
-#define RX_PIN 16
-#define TX_PIN 17
-#define SCAN_DELAY_MS 5000
-#define MAX_SERVO_ID 20
+// Strategy Includes: Only the selected strategy is compiled to save memory.
+#ifdef STRATEGY_ROS
+    #include "strategies/RosStrategy.h"
+#elif defined(STRATEGY_AUTONOMOUS)
+    #include "strategies/AutonomousStrategy.h"
+#elif defined(STRATEGY_TEST)
+    #include "strategies/TestStrategy.h"
+#endif
 
-ServoHandler handler;
-ServoFeedback feedback;
+// --- Global System Objects ---
+Robot robot;                    // The physical robot hardware (HAL)
+Strategy* activeStrategy = nullptr; // Pointer to the logic currently in control
 
-void ping(){
-    Serial.println("Scanning for servos...");
-    bool servoFound = false;
-
-    for (int id = 0; id <= MAX_SERVO_ID; ++id) {
-        if (handler.ping(id)) {
-            Serial.print("Response from servo ID: ");
-            Serial.println(id);
-            servoFound = true;
-        }
-        vTaskDelay(pdMS_TO_TICKS(10)); // Small delay between pings
-    }
-
-    if (!servoFound) {
-        Serial.println("No servos found in ID range 0-20.");
-    }
-
-    Serial.print("Scan complete. Waiting ");
-    Serial.print(SCAN_DELAY_MS / 1000);
-    Serial.println(" seconds before next scan.\n");
-    vTaskDelay(pdMS_TO_TICKS(SCAN_DELAY_MS));
-}
-
-void odometer(){
-    Serial.println("---------------------------");
-
-    for (int i = 1; i<=6; i++) {
-        Serial.println(handler.getFeedback(i,feedback)? "Position "+ String(i)+ " : "+String(feedback.position_deg) : "could not get feedback");
-    }
-    Serial.println("---------------------------");
-    vTaskDelay(pdMS_TO_TICKS(1000));
-}
-
-void odometer2(){
-    Serial.println("*********************************");
-
-    for (int i = 5; i<=6; i++) {
-        Serial.println("---------------------------");
-        Serial.println(handler.getFeedback(i,feedback)? "Position "+ String(i)+ " : "+String(feedback.position_deg) +"°" : "could not get Position");
-        Serial.println(handler.getFeedback(i,feedback)? "Speed "+ String(i)+ " : "+String(feedback.speed_rpm) + " RPM" : "could not get Speed");
-        Serial.println(handler.getFeedback(i,feedback)? "Temperature "+ String(i)+ " : "+String(feedback.temperature_c) +" C" : "could not get Temperature");
-        Serial.println(handler.getFeedback(i,feedback)? "Voltage "+ String(i)+ " : "+String(feedback.voltage) + " V" : "could not get Voltage");
-        Serial.println(handler.getFeedback(i,feedback)? "Current "+ String(i)+ " : "+String(feedback.current_ma) + " mA" : "could not get Current");
-        Serial.println(handler.getFeedback(i,feedback)? "Moving? "+ String(i)+ " : "+String(feedback.is_moving): "could not get Moving?");
-        Serial.println("---------------------------");
-
-    }
-    Serial.println("*********************************");
-    vTaskDelay(pdMS_TO_TICKS(1000));
-}
-
+/**
+ * @brief Standard Arduino setup function.
+ * Initializes hardware and instantiates the selected strategy.
+ */
 void setup() {
-    // Start the serial monitor for printing results
-    Serial.begin(MONITOR_BAUD);
-    while (!Serial) {
-        ; // wait for serial port to connect.
-    }
-    Serial.println("\n--- Servo Tests Initialized ---");
+    // Start serial for debugging
+    Serial.begin(115200);
+    while (!Serial && millis() < 2000); // Wait briefly for Serial to connect
 
-    // Start the hardware serial port for the servo bus
-    Serial2.begin(SERVO_BUS_BAUD,SERIAL_8N1,RX_PIN, TX_PIN);
-    handler.begin(Serial2);
+    Serial.println("\n--- Starting Robot System ---");
 
-    for (int i = 1; i<=6; i++) {
-        handler.setTorque(i, false);
+    // 1. Initialize Robot Hardware (HAL)
+    // This starts background tasks for motors and configures the servo bus.
+    if (!robot.begin(INITIAL_POSE)) {
+        Serial.println("Critical Error: Robot hardware initialization failed!");
     }
 
+    // 2. Strategy Factory: Instantiates the "Brain" selected in config.h
+    #ifdef STRATEGY_ROS
+        activeStrategy = new RosStrategy(robot);
+    #elif defined(STRATEGY_AUTONOMOUS)
+        activeStrategy = new AutonomousStrategy(robot);
+    #elif defined(STRATEGY_TEST)
+        activeStrategy = new TestStrategy(robot);
+    #endif
 
-    Serial.println("Starting ...");
+    if (activeStrategy != nullptr) {
+        activeStrategy->setup();
+    } else {
+        Serial.println("Error: No Strategy defined!");
+    }
 }
 
+/**
+ * @brief Standard Arduino loop function.
+ * Delegates all high-level logic to the active strategy.
+ */
 void loop() {
-    //ping();
-    //odometer();
-    odometer2();
+    if (activeStrategy != nullptr) {
+        activeStrategy->loop();
+    } else {
+        // Fallback if no strategy is active
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
 }
