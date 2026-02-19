@@ -45,6 +45,21 @@ or just
 pio run -t upload && pio device monitor
 ```
 
+## 🧪 Testing
+
+Unit tests run on desktop (no hardware required):
+
+```bash
+pio test
+```
+
+Tests cover:
+- **Servo/Motor math**: Angle conversions, odometry calculations
+- **State machines**: IDLE → VELOCITY/POSITION transitions
+- **HAL integration**: Robot initialization, component access
+
+See `test/README` for details.
+
 ## 🧩 Directory Structure
 
 ```

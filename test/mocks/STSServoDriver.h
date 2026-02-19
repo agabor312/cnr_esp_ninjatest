@@ -5,9 +5,14 @@
 #ifndef MOCK_STSSERVO_DRIVER_H
 #define MOCK_STSSERVO_DRIVER_H
 
-#include <Arduino.h> // We need this for 'byte' and 'HardwareSerial' from our other mock
+#include <Arduino.h>
 #include <map>
-#include "servo_config.h" // Include the separated, shared configuration
+
+// Define the servo configuration constants locally to avoid circular dependency
+// These match ST3215_CONFIG from servoHandler.h
+constexpr byte STS_REG_TORQUE_SWITCH = 0x28;
+constexpr byte STS_REG_TORQUE_LIMIT = 0x30;
+constexpr byte STS_REG_VOLTAGE = 0x3E;
 
 enum STSMode { POSITION = 0, VELOCITY = 1, STEP = 3 };
 
@@ -45,8 +50,6 @@ public:
     // --- Mocked implementations of all library functions ---
     virtual ~STSServoDriver() {}
 
-    // We make these virtual so our simple test mock can inherit and override them if needed,
-    // but we also provide a default implementation.
     virtual bool init(HardwareSerial *serialPort = nullptr, long const &baudRate = 1000000) { return true; }
     virtual bool ping(byte const &servoId) { return true; }
 
@@ -55,11 +58,26 @@ public:
         return true;
     }
 
-    virtual bool writeRegister(byte const &servoId, byte const &registerId, byte const &value, bool const &asynchronous = false);
+    virtual bool writeRegister(byte const &servoId, byte const &registerId, byte const &value, bool const &asynchronous = false) {
+        if (registerId == STS_REG_TORQUE_SWITCH) {
+            getServo(servoId).torque_enabled = (value == 1);
+        }
+        return true;
+    }
 
-    virtual bool writeTwoBytesRegister(byte const &servoId, byte const &registerId, int16_t const &value, bool const &asynchronous = false);
+    virtual bool writeTwoBytesRegister(byte const &servoId, byte const &registerId, int16_t const &value, bool const &asynchronous = false) {
+        if (registerId == STS_REG_TORQUE_LIMIT) {
+            getServo(servoId).torque_limit = value;
+        }
+        return true;
+    }
 
-    virtual int16_t readTwoBytesRegister(byte const &servoId, byte const &registerId);
+    virtual int16_t readTwoBytesRegister(byte const &servoId, byte const &registerId) {
+        if (registerId == STS_REG_VOLTAGE) {
+            return getServo(servoId).current_voltage_raw;
+        }
+        return -1;
+    }
 
     virtual int getCurrentPosition(byte const &servoId) { return getServo(servoId).current_position; }
 
@@ -81,28 +99,5 @@ public:
     virtual float getCurrentCurrent(byte const &servoId) { return getServo(servoId).current_current_amps; }
     virtual bool isMoving(byte const &servoId) { return getServo(servoId).is_moving_status; }
 };
-
-// Now we can define the methods that depend on ST3215_CONFIG
-inline bool STSServoDriver::writeRegister(byte const &servoId, byte const &registerId, byte const &value, bool const &asynchronous) {
-    if (registerId == ST3215_CONFIG.reg_torque_switch) {
-        getServo(servoId).torque_enabled = (value == 1);
-    }
-    return true;
-}
-
-inline bool STSServoDriver::writeTwoBytesRegister(byte const &servoId, byte const &registerId, int16_t const &value, bool const &asynchronous) {
-    if (registerId == ST3215_CONFIG.reg_torque_limit) {
-        getServo(servoId).torque_limit = value;
-    }
-    return true;
-}
-
-inline int16_t STSServoDriver::readTwoBytesRegister(byte const &servoId, byte const &registerId) {
-    if (registerId == ST3215_CONFIG.reg_voltage) {
-        return getServo(servoId).current_voltage_raw;
-    }
-    return -1;
-}
-
 
 #endif // MOCK_STSSERVO_DRIVER_H

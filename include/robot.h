@@ -22,10 +22,11 @@ public:
      * @return true if all initializations succeeded.
      */
     bool begin() {
-        return pose.init(INITIAL_POSE))
-        && motors.begin(&pose, TRACK_WIDTH, LEFT_MOTOR, RIGHT_MOTOR))
-        && Serial2.begin(SERVO_BUS_BAUD, SERIAL_8N1, SERVO_RX_PIN, SERVO_TX_PIN)
-        && servos.begin(Serial2, SERVO_CONFIG));
+        bool poseOk = pose.init(INITIAL_POSE);
+        bool motorsOk = motors.begin(&pose, TRACK_WIDTH, LEFT_MOTOR, RIGHT_MOTOR);
+        Serial2.begin(SERVO_BUS_BAUD, SERIAL_8N1, SERVO_RX_PIN, SERVO_TX_PIN);
+        bool servosOk = servos.begin(Serial2, SERVO_CONFIG);
+        return poseOk && motorsOk && servosOk;
     }
 };
 

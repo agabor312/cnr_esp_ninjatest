@@ -1,11 +1,112 @@
+# Unit Tests
 
-This directory is intended for PlatformIO Test Runner and project tests.
+This directory contains the unit test suite for the ECN Nantrobot firmware.
 
-Unit Testing is a software testing method by which individual units of
-source code, sets of one or more MCU program modules together with associated
-control data, usage procedures, and operating procedures, are tested to
-determine whether they are fit for use. Unit testing finds problems early
-in the development cycle.
+## Running Tests
 
-More information about PlatformIO Unit Testing:
-- https://docs.platformio.org/en/latest/advanced/unit-testing/index.html
+```bash
+pio test
+```
+
+## Test Structure
+
+### Test Files
+
+| File | Component | Tests |
+|------|-----------|-------|
+| `test_servo.cpp` | ServoHandler | 7 tests - angle/position conversions, velocity control, feedback |
+| `test_motor.cpp` | MotorHandler | 4 tests - turn geometry, state machine, odometry |
+| `test_robot.cpp` | Robot | 3 tests - initialization, component access, pose |
+| `test_strategy.cpp` | Strategy Interface | 3 tests - lifecycle, polymorphism, robot access |
+| `test_utils.cpp` | Utils/RAII | 3 tests - mutex initialization, lock/unlock, auto-unlock |
+
+**Total: 20 tests**
+
+### Mocks (`mocks/`)
+
+Hardware abstraction mocks for desktop testing:
+- **Arduino.h** - Time, Serial, String mocks
+- **AccelStepper.h** - Stepper motor mock
+- **STSServoDriver.h** - STS servo bus mock
+- **TestStrategy.h** - Test strategy implementation
+- **freertos/** - FreeRTOS semaphore and task stubs
+
+### Configuration
+
+- **test_config.h** - Shared test constants (TRACK_WIDTH, WHEEL_DIAMETER, tolerances)
+- **test_main.cpp** - Test runner entry point
+
+## What Each Test Suite Covers
+
+### ServoHandler (`test_servo.cpp`)
+- **Conversions**: angle ↔ position (0°, 180°, 360°), RPM ↔ speed
+- **Commands**: setAngle, setVelocity, stop
+- **Feedback**: getAngle, getFeedback (all fields)
+
+### MotorHandler (`test_motor.cpp`)
+- **Turn Geometry**: 90° CCW/CW turns, correct wheel directions
+- **State Machine**: IDLE → VELOCITY_MODE, IDLE → POSITION_MODE
+- **Odometry**: metersPerStep calculation
+
+### Robot (`test_robot.cpp`)
+- **Initialization**: Component creation, pose init
+- **Access**: motors, servos, pose members accessible
+- **Integration**: Motors can be initialized with pose
+
+### Strategy Interface (`test_strategy.cpp`)
+- **Lifecycle**: setup() and loop() called correctly
+- **Polymorphism**: Works through Strategy base pointer
+- **Access**: Can access robot.motors, robot.servos, robot.pose
+
+### Utils/RAII (`test_utils.cpp`)
+- **Mutex**: Created on init
+- **Locking**: Read/modify/write pattern works
+- **RAII**: Auto-unlock on scope exit
+
+## Test Philosophy
+
+These tests verify **logic and math** without hardware:
+- Unit conversions (angle↔position, m/s↔steps/s)
+- State machine transitions
+- Component wiring and access
+- Resource management (RAII)
+
+They catch logic errors early before deploying to hardware.
+
+## PlatformIO Configuration
+
+Tests run on the **native** platform (desktop) using mocked hardware:
+- Environment: `test` (native platform)
+- No ESP32 hardware required
+- Fast iteration cycle
+
+## Adding Tests
+
+1. Add test function to appropriate `test_*.cpp` file
+2. Declare in corresponding `test_*.h` header
+3. Call from `run*Tests()` function in that file
+4. Add to `test_main.cpp` if creating new test suite
+
+Example:
+```cpp
+// test_servo.cpp
+static void test_new_feature(void) {
+    // Setup
+    servoSetUp();
+    
+    // Test
+    servoHandler->setAngle(1, 45.0f);
+    TEST_ASSERT_EQUAL(512, mockDriver->getServo(1).target_position);
+    
+    // Cleanup
+    servoTearDown();
+}
+
+// In runServoTests():
+RUN_TEST(test_new_feature);
+```
+
+## More Information
+
+- [PlatformIO Unit Testing](https://docs.platformio.org/en/latest/advanced/unit-testing/index.html)
+- Tests use the Unity framework (automatically included by PlatformIO)

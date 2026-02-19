@@ -21,6 +21,19 @@ MotorHandler::MotorHandler() {
     pMotorR = nullptr;
 }
 
+MotorHandler::MotorHandler(AccelStepper* left, AccelStepper* right) {
+    position = nullptr;
+    motorMutex = nullptr;
+    state = IDLE;
+    metersPerStepL = 0;
+    metersPerStepR = 0;
+    stepDistanceL = 0;
+    stepDistanceR = 0;
+    trackWidth = 0;
+    pMotorL = left;   // Use provided pointer (can be nullptr)
+    pMotorR = right;  // Use provided pointer (can be nullptr)
+}
+
 MotorHandler::~MotorHandler() {
     if (pMotorL) delete pMotorL;
     if (pMotorR) delete pMotorR;
@@ -37,9 +50,13 @@ bool MotorHandler::begin(RAII<Position>* pos, float robotTrackWidth, MotorConfig
     this->position = pos;
     this->trackWidth = robotTrackWidth;
 
-    // Allocate Motors
-    pMotorL = new AccelStepper(leftConfig.motorInterfaceType, leftConfig.step_pin, leftConfig.dir_pin);
-    pMotorR = new AccelStepper(rightConfig.motorInterfaceType, rightConfig.step_pin, rightConfig.dir_pin);
+    // Allocate Motors only if not already provided (testing constructor)
+    if (pMotorL == nullptr) {
+        pMotorL = new AccelStepper(leftConfig.motorInterfaceType, leftConfig.step_pin, leftConfig.dir_pin);
+    }
+    if (pMotorR == nullptr) {
+        pMotorR = new AccelStepper(rightConfig.motorInterfaceType, rightConfig.step_pin, rightConfig.dir_pin);
+    }
 
     // Calculate Constants
     calculateMotorConstants(leftConfig, metersPerStepL, stepDistanceL);

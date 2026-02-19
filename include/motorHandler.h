@@ -74,6 +74,14 @@ struct Position {
 class MotorHandler {
 public:
     MotorHandler();
+    
+    /**
+     * @brief Testing constructor with injectable AccelStepper instances.
+     * @param left Pointer to left motor (nullptr for default behavior)
+     * @param right Pointer to right motor (nullptr for default behavior)
+     */
+    MotorHandler(AccelStepper* left, AccelStepper* right);
+    
     ~MotorHandler();
 
     /**
