@@ -10,10 +10,12 @@
  * STRATEGY_ROS: Control the robot via a serial interface (e.g. Raspberry Pi)
  * STRATEGY_AUTONOMOUS: Use a standalone state machine for Eurobot missions
  * STRATEGY_TEST: Diagnostic mode for hardware verification
+ * Attempt1: Andrei's testing grounds
  */
-#define STRATEGY_ROS
+// #define STRATEGY_ROS
 // #define STRATEGY_AUTONOMOUS
 // #define STRATEGY_TEST
+ #define ATTEMPT1
 
 /**
  * --- Servo Configuration ---

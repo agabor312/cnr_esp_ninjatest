@@ -16,7 +16,8 @@ public:
     MotorHandler motors; // Handles stepper motors and high-level movement
     ServoHandler servos; // Handles communication with the serial bus servos
     RAII<Position> pose; // Thread-safe field coordinates (x, y, theta)
-
+    
+    
     /**
      * @brief Initializes all hardware components of the robot.
      * @return true if all initializations succeeded.

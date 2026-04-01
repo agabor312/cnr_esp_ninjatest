@@ -9,6 +9,8 @@
     #include "strategies/AutonomousStrategy.h"
 #elif defined(STRATEGY_TEST)
     #include "strategies/TestStrategy.h"
+#elif defined(ATTEMPT1)
+    #include "strategies/Attempt1.h"
 #endif
 
 // --- Global System Objects ---
@@ -28,7 +30,7 @@ void setup() {
 
     // 1. Initialize Robot Hardware (HAL)
     // This starts background tasks for motors and configures the servo bus.
-    if (!robot.begin(INITIAL_POSE)) {
+    if (!robot.begin()) {
         Serial.println("Critical Error: Robot hardware initialization failed!");
     }
 
@@ -39,6 +41,8 @@ void setup() {
         activeStrategy = new AutonomousStrategy(robot);
     #elif defined(STRATEGY_TEST)
         activeStrategy = new TestStrategy(robot);
+    #elif defined(ATTEMPT1)
+        activeStrategy = new Attempt_1(robot);
     #endif
 
     if (activeStrategy != nullptr) {
